@@ -10,106 +10,131 @@
 
 ---
 
-> **Aim:** To develop an Android application that retrieves person data in JSON format from an internet API over HTTP connection and stores the retrieved data in an SQLite database for offline-first persistence.
+## 🎯 Aim
+> **To develop an Android application that retrieves person data in JSON format from an internet API over HTTP connection and stores the retrieved data in an SQLite database for offline-first persistence.**
+
+---
+
+## 👤 Developer Information
+
+| Field | Student Details |
+| :--- | :--- |
+| **Name** | **Maharsh Patel** |
+| **Enrollment Number** | **24012011102** |
+| **Course** | Mobile Application Development (MAD) |
+| **Semester** | 5th Semester |
+| **Institute** | UVPCE |
+| **Practical Number** | Practical 7 |
+| **GitHub Repository** | [https://github.com/maharsh-patel/MAD_24012011102_Practical_7](https://github.com/maharsh-patel/MAD_24012011102_Practical_7) |
 
 ---
 
 ## 📋 Table of Contents
 
-- [🎯 Project Overview](#-project-overview)
-- [⚡ Data Flow & Architecture](#-data-flow--architecture)
+- [🎯 Aim](#-aim)
+- [👤 Developer Information](#-developer-information)
+- [ℹ️ Project Information](#️-project-information)
 - [✨ Key Features](#-key-features)
-- [⚠️ Important Technical Notes](#️-important-technical-notes)
+- [⚠️ Important Implementation Details](#️-important-implementation-details)
+- [📁 Project Directory Structure](#-project-directory-structure)
+- [⚙️ Code Architecture & Components](#️-code-architecture--components)
 - [📄 API Response Schema & Mapping](#-api-response-schema--mapping)
 - [💾 Database Schema & Contract](#-database-schema--contract)
-- [📁 Key Components & Code Architecture](#-key-components--code-architecture)
 - [💡 Key Code Snippets](#-key-code-snippets)
 - [📸 Screenshots](#-screenshots)
 - [🛠 Tech Stack & Dependencies](#-tech-stack--dependencies)
 - [🚀 How to Build & Run](#-how-to-build--run)
-- [👤 Developer Info](#-developer-info)
 
 ---
 
-## 🎯 Project Overview
+## ℹ️ Project Information
 
-This Android application demonstrates a complete end-to-end integration of **remote REST API communication**, **nested JSON parsing**, **asynchronous background processing**, and **local data persistence using SQLite** in Kotlin.
+This Android application demonstrates end-to-end integration of **remote REST API communication**, **nested JSON parsing**, **asynchronous background processing**, and **local data persistence using SQLite** in Kotlin.
 
-When the app is opened:
-1. It queries the local SQLite database (`persons_db`).
-2. If records exist, it populates the UI instantly (**Offline-First Access**).
-3. If the database is empty, or when the user manually taps the refresh **Floating Action Button (FAB)**, the app initiates an HTTP GET request via `HttpURLConnection` with Bearer token authentication to fetch raw JSON contact profiles.
-4. The nested JSON payload is parsed into `Person` model objects and saved to SQLite using an `INSERT OR REPLACE` conflict policy.
-5. The dataset is dynamically rendered in a **RecyclerView** using Material card views, supporting real-time item deletion.
-
----
-
-## ⚡ Data Flow & Architecture
-
-```
-                                  [ User Launches App / Hits Refresh FAB ]
-                                                     │
-                                                     ▼
-                                        ┌─────────────────────────┐
-                                        │  Check Local SQLite DB  │
-                                        └────────────┬────────────┘
-                                                     │
-                         ┌───────────────────────────┴───────────────────────────┐
-                         ▼                                                       ▼
-                [ Contacts Found ]                                     [ Database Empty / Refreshed ]
-                         │                                                       │
-                         ▼                                                       ▼
-            ┌─────────────────────────┐                             ┌─────────────────────────┐
-            │  Render RecyclerView    │                             │  Launch Coroutine IO    │
-            │  From Local SQLite DB   │                             └────────────┬────────────┘
-            └─────────────────────────┘                                          │
-                                                                                 ▼
-                                                                    ┌─────────────────────────┐
-                                                                    │ HttpURLConnection API   │
-                                                                    │ (Bearer Auth Request)   │
-                                                                    └────────────┬────────────┘
-                                                                                 │
-                                                                                 ▼
-                                                                    ┌─────────────────────────┐
-                                                                    │ Parse JSON Response     │
-                                                                    │ (org.json.JSONObject)   │
-                                                                    └────────────┬────────────┘
-                                                                                 │
-                                                                                 ▼
-                                                                    ┌─────────────────────────┐
-                                                                    │ Insert/Replace SQLite   │
-                                                                    │ (persons_db)            │
-                                                                    └────────────┬────────────┘
-                                                                                 │
-                                                                                 ▼
-                                                                    ┌─────────────────────────┐
-                                                                    │ Switch Dispatchers.Main │
-                                                                    │ Update RecyclerView     │
-                                                                    └─────────────────────────┘
-```
+### How it Works:
+1. **Launch Phase:** The app queries the local SQLite database (`persons_db`).
+2. **Offline First:** If records exist, contacts are instantly displayed in a `RecyclerView` without network delay.
+3. **API Fetching:** If the database is empty or the user taps the refresh **Floating Action Button (FAB)**, the app executes an HTTP GET request to `https://api.json-generator.com/templates/5rDXHcbgpo93/data` with Bearer token authentication.
+4. **JSON Parsing & DB Insertion:** The received nested JSON string is parsed into `Person` model objects and inserted/updated into SQLite using `CONFLICT_REPLACE`.
+5. **Real-Time UI Updates:** The `RecyclerView` updates smoothly using Kotlin Coroutines on `Dispatchers.Main`. Users can also delete individual contact records, updating both the SQLite database and the UI list simultaneously.
 
 ---
 
 ## ✨ Key Features
 
-- 🌐 **RESTful API Communications:** Communicates with remote JSON API endpoints using `HttpURLConnection`.
-- 🔑 **Bearer Token Authorization:** Automatically passes `Authorization: Bearer <token>` and `Content-Type: application/json` headers in network calls.
-- ⚡ **Asynchronous Concurrency:** Utilizes Kotlin `CoroutineScope` with `Dispatchers.IO` for non-blocking network I/O and DB operations, switching to `Dispatchers.Main` for UI thread updates.
-- 📦 **Nested JSON Parsing:** Parses structured nested JSON (`profile.name`, `profile.address`, `profile.location.lat/long`) using native `org.json.JSONArray` and `org.json.JSONObject`.
-- 💾 **SQLite Persistence:** Employs `SQLiteOpenHelper` to store contacts locally with a primary key `CONFLICT_REPLACE` policy.
-- 📱 **Interactive Material UI:** Displays details in a `RecyclerView` with `MaterialCardView` cards, individual delete buttons, and a Floating Action Button (FAB).
-- 🔄 **Offline First Access:** Data is read directly from the local database, ensuring zero network latency on app relaunch.
+- 🌐 **RESTful API Fetching:** Fetches contact data over HTTP via `HttpURLConnection`.
+- 🔑 **Bearer Token Authorization:** Attaches `Authorization: Bearer <token>` and `Content-Type: application/json` headers to API requests.
+- ⚡ **Kotlin Coroutines:** Asynchronous execution using `CoroutineScope` on `Dispatchers.IO` for network/database work and `Dispatchers.Main` for UI rendering.
+- 📦 **Nested JSON Parsing:** Uses native `org.json` package to extract fields (`profile.name`, `profile.address`, `profile.location.lat/long`).
+- 💾 **SQLite Persistence:** Custom `SQLiteOpenHelper` handling table creation, version upgrades, and CRUD operations.
+- 📱 **Material UI Design:** Uses `MaterialCardView`, `RecyclerView`, `FloatingActionButton`, and `ProgressBar`.
+- 🗑️ **Interactive Operations:** Supports deleting contacts from the database and manually refreshing data from the server.
 
 ---
 
-## ⚠️ Important Technical Notes
+## ⚠️ Important Implementation Details
 
 > [!IMPORTANT]
-> 1. **INTERNET Permission:** Granted in `AndroidManifest.xml` via `<uses-permission android:name="android.permission.INTERNET" />`.
-> 2. **API Authentication:** Network requests to `https://api.json-generator.com/templates/5rDXHcbgpo93/data` require a Bearer token (`d7wrtfqywyhu7y2bcbsz3cgjpbfisuhnmbibvgvf`) passed in request headers.
-> 3. **Non-Blocking Execution:** Network and SQLite operations run exclusively on `Dispatchers.IO` to prevent UI lag or ANR (Application Not Responding) exceptions.
-> 4. **SQLite Conflict Resolution:** Uses `SQLiteDatabase.CONFLICT_REPLACE` on primary key `id` to handle updates seamlessly without duplicate records.
-> 5. **ViewBinding:** ViewBinding is enabled in `build.gradle.kts` for null-safe view references in `activity_main.xml` and `item_person.xml`.
+> 1. **INTERNET Permission:** Declared in `AndroidManifest.xml` via `<uses-permission android:name="android.permission.INTERNET" />`.
+> 2. **API Authentication Token:** The API requires a Bearer Token (`d7wrtfqywyhu7y2bcbsz3cgjpbfisuhnmbibvgvf`) passed in HTTP headers.
+> 3. **Non-Blocking Threads:** All networking and database transactions run off the main UI thread via `Dispatchers.IO` to prevent ANR errors.
+> 4. **Conflict Resolution Policy:** Uses `SQLiteDatabase.CONFLICT_REPLACE` on primary key `id` to handle updates seamlessly without duplicate entry errors.
+> 5. **ViewBinding:** Enabled in `build.gradle.kts` for type-safe layout access in `activity_main.xml` and `item_person.xml`.
+
+---
+
+## 📁 Project Directory Structure
+
+```
+MAD_24012011102_Practical_7/
+├── .gitignore
+├── README.md
+├── build.gradle.kts
+├── gradle.properties
+├── settings.gradle.kts
+├── Screenshots/
+│   └── SS_7_1.png
+├── gradle/
+│   ├── libs.versions.toml
+│   └── wrapper/
+│       ├── gradle-wrapper.jar
+│       └── gradle-wrapper.properties
+└── app/
+    ├── build.gradle.kts
+    └── src/
+        ├── main/
+        │   ├── AndroidManifest.xml
+        │   ├── java/com/example/mad_24012011102_practical_7/
+        │   │   ├── MainActivity.kt         # Main Activity & UI Controller
+        │   │   ├── HttpRequest.kt          # HTTP Client & Bearer Auth
+        │   │   ├── DatabaseHelper.kt       # SQLite Helper (CRUD Operations)
+        │   │   ├── PersonDbTableData.kt    # SQLite Table Schema Contract
+        │   │   ├── Person.kt               # Serializable Data Class
+        │   │   └── PersonAdapter.kt        # RecyclerView Adapter
+        │   └── res/
+        │       ├── drawable/               # Vector Drawables & Backgrounds
+        │       ├── layout/
+        │       │   ├── activity_main.xml   # Main Layout (RecyclerView & FAB)
+        │       │   └── item_person.xml     # Contact Card Row Item Layout
+        │       └── values/
+        │           ├── colors.xml
+        │           ├── strings.xml
+        │           └── themes.xml
+        └── test/                           # Unit Tests
+```
+
+---
+
+## ⚙️ Code Architecture & Components
+
+| Component | File Path | Functional Description |
+| :--- | :--- | :--- |
+| **Main Screen** | `MainActivity.kt` | Manages UI state, triggers API requests via Coroutines, parses JSON responses, and binds contacts to RecyclerView. |
+| **Network Manager** | `HttpRequest.kt` | Connects to remote URL using `HttpURLConnection`, sets Bearer headers, and returns response string. |
+| **Database Manager** | `DatabaseHelper.kt` | Extends `SQLiteOpenHelper`. Handles SQLite table creation and CRUD operations (`insertPerson`, `getPerson`, `allPersons`, `deletePerson`, `updatePerson`). |
+| **Database Schema** | `PersonDbTableData.kt` | Defines database constants (table name `persons`, column names) and `CREATE TABLE` SQL syntax. |
+| **Data Model** | `Person.kt` | Data structure class implementing `Serializable`, holding contact properties (`id`, `name`, `emailId`, `phoneNo`, `address`, `latitude`, `longitude`). |
+| **List Adapter** | `PersonAdapter.kt` | `RecyclerView.Adapter` binding contact cards to layout views and handling individual row delete actions. |
 
 ---
 
@@ -134,24 +159,22 @@ When the app is opened:
 ]
 ```
 
-### JSON to Model Mapping (`Person.kt`)
-| JSON Path | Model Property | Data Type |
-| :--- | :--- | :--- |
-| `id` | `id` | `String` (Primary Key) |
-| `profile.name` | `name` | `String` |
-| `email` | `emailId` | `String` |
-| `phone` | `phoneNo` | `String` |
-| `profile.address` | `address` | `String` |
-| `profile.location.lat` | `latitude` | `Double` |
-| `profile.location.long` | `longitude` | `Double` |
+### JSON Mapping to `Person.kt` Model
+| JSON Path | Model Field | Data Type | Database Column |
+| :--- | :--- | :--- | :--- |
+| `id` | `id` | `String` | `id` (PRIMARY KEY) |
+| `profile.name` | `name` | `String` | `person_name` |
+| `email` | `emailId` | `String` | `person_email_id` |
+| `phone` | `phoneNo` | `String` | `person_phone_no` |
+| `profile.address` | `address` | `String` | `person_address` |
+| `profile.location.lat` | `latitude` | `Double` | `person_lat` |
+| `profile.location.long` | `longitude` | `Double` | `person_long` |
 
 ---
 
 ## 💾 Database Schema & Contract
 
-**Database Name:** `persons_db`  
-**Database Version:** `1`  
-**Table Name:** `persons`  
+**Database Name:** `persons_db` | **Version:** `1` | **Table:** `persons`
 
 ```sql
 CREATE TABLE persons(
@@ -167,22 +190,9 @@ CREATE TABLE persons(
 
 ---
 
-## 📁 Key Components & Code Architecture
-
-| Component | Class / File | Description |
-| :--- | :--- | :--- |
-| **Main Activity** | `MainActivity.kt` | Coordinates lifecycle, Coroutines, API fetch triggers, JSON parsing, and adapter notifications. |
-| **Network Client** | `HttpRequest.kt` | Executes `HttpURLConnection` with request headers and converts input stream to String. |
-| **Database Helper** | `DatabaseHelper.kt` | Extends `SQLiteOpenHelper`. Provides CRUD methods (`insertPerson`, `getPerson`, `allPersons`, `deletePerson`, `updatePerson`). |
-| **Table Contract** | `PersonDbTableData.kt` | Defines SQLite table schema constants and `CREATE TABLE` query syntax. |
-| **Data Model** | `Person.kt` | Data class implementing `Serializable` holding contact profile fields. |
-| **List Adapter** | `PersonAdapter.kt` | `RecyclerView.Adapter` binding contact profiles to card items and listening for delete actions. |
-
----
-
 ## 💡 Key Code Snippets
 
-### 1. HTTP Request with Bearer Header (`HttpRequest.kt`)
+### 1. HTTP Request with Bearer Auth (`HttpRequest.kt`)
 ```kotlin
 val url = URL(reqUrl)
 val conn = url.openConnection() as HttpURLConnection
@@ -194,7 +204,7 @@ conn.requestMethod = "GET"
 response = convertStreamToString(BufferedInputStream(conn.inputStream))
 ```
 
-### 2. SQLite Conflict Replacement (`DatabaseHelper.kt`)
+### 2. SQLite Conflict Replace Insertion (`DatabaseHelper.kt`)
 ```kotlin
 fun insertPerson(person: Person): Long {
     val db = writableDatabase
@@ -209,7 +219,7 @@ fun insertPerson(person: Person): Long {
 }
 ```
 
-### 3. Asynchronous Fetch & Coroutine UI Switch (`MainActivity.kt`)
+### 3. Asynchronous Execution & UI Switch (`MainActivity.kt`)
 ```kotlin
 CoroutineScope(Dispatchers.IO).launch {
     val json = HttpRequest().makeServiceCall(API_URL, API_TOKEN)
@@ -239,11 +249,11 @@ CoroutineScope(Dispatchers.IO).launch {
 
 - **Language:** Kotlin 1.9+
 - **Database:** SQLite (`SQLiteOpenHelper`)
+- **Networking:** `HttpURLConnection` + `org.json`
 - **Concurrency:** Kotlin Coroutines (`kotlinx-coroutines-android`)
-- **UI Components:** `RecyclerView`, `MaterialCardView`, `FloatingActionButton`, `ProgressBar`
-- **Architecture:** ViewBinding (`build.gradle.kts`)
-- **Min SDK:** 24 (Android 7.0)
-- **Target SDK:** 34 / 35 (Android 14 / 15)
+- **UI Framework:** Material Design (`RecyclerView`, `MaterialCardView`, `FloatingActionButton`)
+- **View Binding:** ViewBinding enabled
+- **Target SDK:** 34 / 35 | **Min SDK:** 24
 
 ---
 
@@ -254,23 +264,14 @@ CoroutineScope(Dispatchers.IO).launch {
    git clone https://github.com/maharsh-patel/MAD_24012011102_Practical_7.git
    ```
 2. **Open in Android Studio:**
-   - Launch Android Studio (Hedgehog or newer).
-   - Select **Open** and select the cloned project directory.
-3. **Gradle Sync:**
-   - Allow Gradle to sync dependencies and build configuration.
-4. **Run Application:**
-   - Connect an Android device or launch an Emulator (API 24+).
-   - Press **Run** (`Shift + F10`).
+   - Open Android Studio and select **Open**.
+   - Navigate to the cloned `MAD_24012011102_Practical_7` folder.
+3. **Sync & Run:**
+   - Wait for Gradle sync to complete.
+   - Run on an Emulator or connected Physical Device (Android 7.0+ / API 24+).
 
 ---
-
-## 👤 Developer Info
 
 <p align="center">
-  <b>Maharsh Patel</b><br>
-  🆔 Enrollment No: <b>24012011102</b><br>
-  🎓 Mobile Application Development (MAD) • Practical 7<br>
-  🏫 UVPCE
+  <sub>👤 <b>Maharsh Patel</b> &nbsp;•&nbsp; 🆔 Enrollment No: <b>24012011102</b> &nbsp;•&nbsp; 🕒 Practical 7</sub>
 </p>
-
----
